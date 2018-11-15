@@ -59,7 +59,7 @@ class IOReward_E2(klibs.Experiment):
 
 		# Stimulus layout
 		box_offset = deg_to_px(8.0)
-		self.left_box_loc = (P.screen_c[0] - box_offset, P.screen_c[1])
+		self.left_box_loc =  (P.screen_c[0] - box_offset, P.screen_c[1])
 		self.right_box_loc = (P.screen_c[0] + box_offset, P.screen_c[1])
 
 		# Generate target colouring
@@ -114,7 +114,7 @@ class IOReward_E2(klibs.Experiment):
 		# ---------------------------------- #
 		
 		# Initialize response collectors
-		self.probe_rc = ResponseCollector(uses=RC_KEYPRESS)
+		self.probe_rc =    ResponseCollector(uses=RC_KEYPRESS)
 		self.training_rc = ResponseCollector(uses=RC_KEYPRESS)
 		
 		# Initialize ResponseCollector keymaps
@@ -138,21 +138,21 @@ class IOReward_E2(klibs.Experiment):
 		# Make default font size larger
 		self.txtm.add_style('myText',large_text_size, WHITE)
 
-		err_txt = "{0}\n\nPress any key to continue."
-		lost_fixation_txt = err_txt.format("Eyes moved! Please keep your eyes on the asterisk.")
-		probe_timeout_txt = err_txt.format("No response detected! Please respond as fast and as accurately as possible.")
+		err_txt =              "{0}\n\nPress any key to continue."
+		lost_fixation_txt =    err_txt.format("Eyes moved! Please keep your eyes on the asterisk.")
+		probe_timeout_txt =    err_txt.format("No response detected! Please respond as fast and as accurately as possible.")
 		training_timeout_txt = err_txt.format("Line response timed out!")
 		response_on_nogo_txt = err_txt.format("\'nogo\' signal (x) presented\nPlease only respond when you see "
-			"the \'go\' signal (+).")
+			                   "the \'go\' signal (+).")
 		
 		self.err_msgs = {
-			'fixation': message(lost_fixation_txt, 'myText', align='center', blit_txt=False),
-			'probe_timeout': message(probe_timeout_txt, 'myText', align='center', blit_txt=False),
+			'fixation':         message(lost_fixation_txt, 'myText', align='center', blit_txt=False),
+			'probe_timeout':    message(probe_timeout_txt, 'myText', align='center', blit_txt=False),
 			'training_timeout': message(training_timeout_txt, 'myText', align='center', blit_txt=False),
 			'response_on_nogo': message(response_on_nogo_txt, 'myText', align='center', blit_txt=False)
 		}
 
-		self.rest_break_txt = err_txt.format("Whew! that was tricky eh? Go ahead and take a break before continuing.")
+		self.rest_break_txt =   err_txt.format("Whew! that was tricky eh? Go ahead and take a break before continuing.")
 		self.end_of_block_txt = "You're done the first task! Please buzz the researcher to let them know!"
 
 		# -------------------------------- #
@@ -198,11 +198,11 @@ class IOReward_E2(klibs.Experiment):
 
 	def setup_response_collector(self):
 		# Configure probe response collector
-		self.probe_rc.terminate_after = [1500, TK_MS]
-		self.probe_rc.display_callback = self.probe_callback
-		self.probe_rc.flip = True
+		self.probe_rc.terminate_after = [1500, TK_MS] # Waits 1.5s for response
+		self.probe_rc.display_callback = self.probe_callback # Continuousy called when collection loop is initiated
+		self.probe_rc.flip = True 
 		self.probe_rc.keypress_listener.key_map = self.probe_keymap
-		self.probe_rc.keypress_listener.interrupts = True
+		self.probe_rc.keypress_listener.interrupts = True # Abort collection loop once response made
 		
 		# Configure training response collector
 		self.training_rc.terminate_after = [1500, TK_MS]
@@ -216,11 +216,10 @@ class IOReward_E2(klibs.Experiment):
 		self.targets_shown = False
 		self.err = None
 
-		# training PROPERTIES
+		# TRAINING PROPERTIES
 		if P.practicing:
-			self.cotoa = 'NA'
-			# Establish location & colour of trainings
-
+			self.cotoa = 'NA' # No cue, so no COTOA
+			# Establish location of target line
 			if self.tilt_line_location == LEFT:
 				self.tilt_line_loc = self.left_box_loc
 				self.flat_line_loc = self.right_box_loc
@@ -268,7 +267,7 @@ class IOReward_E2(klibs.Experiment):
 		self.el.drift_correct()
 
 	def trial(self):
-		# training TRIAL
+		# TRAINING TRIAL
 		if P.practicing:
 			cotoa, probe_rt = ['NA', 'NA'] # Don't occur in training blocks
 
@@ -278,27 +277,23 @@ class IOReward_E2(klibs.Experiment):
 				self.present_boxes() 
 				flip()
 
-			# training RESPONSE PERIOD
+			# TRAINING RESPONSE PERIOD
 			self.targets_shown = True # After trainings shown, don't recycle trial
-			
-			# Present trainings and listen for response
-			self.training_rc.collect()
+			self.training_rc.collect() # Present trainings and listen for response
 			
 			# If wrong response made
 			if self.err:
 				line_response, line_rt, reward = ['NA', 'NA', 'NA']
 			else:
 				self.err = 'NA'
-				# Retrieve responses from ResponseCollector(s) & record data
-				line_response = self.training_rc.keypress_listener.response(value=True, rt=False)
-				line_rt = self.training_rc.keypress_listener.response(value=False, rt=True)
+				# Retrieve responses from ResponseCollector & record data
+				line_response, line_rt = self.training_rc.keypress_listener.response()
 
 				if line_rt == TIMEOUT:
-					self.show_error_message('training_timeout')
 					reward = 'NA'
+					self.show_error_message('training_timeout')
 				else:
-					# Determine training payout & display
-					reward = self.feedback(line_response)
+					reward = self.feedback(line_response) # Determine training payout & display
 
 		# PROBE TRIAL
 		else:
@@ -323,21 +318,22 @@ class IOReward_E2(klibs.Experiment):
 
 			# PROBE RESPONSE PERIOD
 			self.targets_shown = True # After probe shown, don't recycle trial
-			# Present probes & listen for response
-			self.probe_rc.collect()
+			self.probe_rc.collect() # Present probes & listen for response
 
 			# If 'go' trial, check for response
 			if self.go_no_go == GO:
-				# If wrong response made
-				if self.err:
+				
+				if self.err: # If wrong response made
 					probe_rt = 'NA'
-				# If correct response OR timeout
-				else:
+				
+				else: # If correct response OR timeout
 					self.err = 'NA'
 					probe_rt = self.probe_rc.keypress_listener.response(value=False,rt=True)
+
 					if probe_rt == TIMEOUT:
-						self.show_error_message('probe_timeout')
 						probe_rt = 'NA'
+						self.show_error_message('probe_timeout')
+
 			# Similarly, for 'nogo' trials
 			else:
 				probe_rt = 'NA'
@@ -350,24 +346,24 @@ class IOReward_E2(klibs.Experiment):
 					self.err = 'NA'
 		# Return trial data
 		return {
-			"block_num": P.block_number,
-			"trial_num": P.trial_number,
-			"block_type": "training" if P.practicing else "probe",
+			"block_num":      P.block_number,
+			"trial_num":      P.trial_number,
+			"block_type":     "training" if P.practicing else "probe",
 			"high_value_col": self.high_value_colour[:3] if P.practicing else 'NA',
-			"tilt_line_loc": self.tilt_line_loc if P.practicing else 'NA',
-			"low_value_col": self.low_value_colour[:3] if P.practicing else 'NA',
-			"flat_line_loc": self.flat_line_loc if P.practicing else 'NA',
-			"winning_trial": self.winning_trial if P.practicing else 'NA',
-			"line_response": line_response,
-			"line_rt": line_rt,
-			"reward": reward,
-			"cue_loc": self.cue_location if not P.practicing else 'NA',
-			"cotoa": self.cotoa if not P.practicing else 'NA',
-			"probe_loc": self.probe_location if not P.practicing else 'NA',
-			"probe_col": self.probe_colour if not P.practicing else 'NA',
-			"go_no_go": self.go_no_go if not P.practicing else 'NA',
-			"probe_rt": probe_rt,
-			"err": self.err
+			"tilt_line_loc":  self.tilt_line_loc if P.practicing else 'NA',
+			"low_value_col":  self.low_value_colour[:3] if P.practicing else 'NA',
+			"flat_line_loc":  self.flat_line_loc if P.practicing else 'NA',
+			"winning_trial":  self.winning_trial if P.practicing else 'NA',
+			"line_response":  line_response,
+			"line_rt":        line_rt,
+			"reward":         reward,
+			"cue_loc":        self.cue_location if not P.practicing else 'NA',
+			"cotoa":          self.cotoa if not P.practicing else 'NA',
+			"probe_loc":      self.probe_location if not P.practicing else 'NA',
+			"probe_col":      self.probe_colour if not P.practicing else 'NA',
+			"go_no_go":       self.go_no_go if not P.practicing else 'NA',
+			"probe_rt":       probe_rt,
+			"err":            self.err
 		}
 		# Clear remaining stimuli from screen
 		clear()
@@ -393,6 +389,7 @@ class IOReward_E2(klibs.Experiment):
 	def feedback(self, response):
 		correct_response = True if response == self.tilt_line_location else False
 
+		# Every 5 trials of a particular payoff, ask anticipated earnings
 		if self.potential_payoff == HIGH:
 			self.high_value_trial_count += 1
 			if self.high_value_trial_count in [5,10,15]:
@@ -401,17 +398,19 @@ class IOReward_E2(klibs.Experiment):
 			self.low_value_trial_count += 1
 			if self.low_value_trial_count in [5,10,15]:
 				self.query_learning(LOW)
-
+		
+		# Determine payout for trial
 		if correct_response & (self.winning_trial == YES):
 			points = self.payout()
 			msg = message("You won {0} points!".format(points), 'myText', blit_txt=False)
 		else:
 			points = self.penalty
 			msg = message("You lost 5 points!", 'myText', blit_txt=False)
-
+		# Keep tally of score
 		self.total_score += points
 		feedback = [points, msg]
 
+		# Present score
 		feedback_exposure = CountDown(self.feedback_exposure_period)
 		fill()
 		blit(feedback[1], location=P.screen_c, registration=5)
@@ -421,7 +420,7 @@ class IOReward_E2(klibs.Experiment):
 
 		return feedback[0]
 
-	def payout(self):
+	def payout(self): # Calculates payout
 		mean = self.high_payout_baseline if self.potential_payoff == HIGH else self.low_payout_baseline
 
 		return int(random.gauss(mean, 1) + 0.5)
@@ -443,24 +442,26 @@ class IOReward_E2(klibs.Experiment):
 	def present_boxes(self):
 		fill()
 		blit(self.fixation, 5, P.screen_c)
-		if P.practicing:
+		if P.practicing: # During training, box colour indicates potential payout
 			if self.potential_payoff == HIGH:
 				blit(self.high_val_rect, 5, self.left_box_loc)
 				blit(self.high_val_rect, 5, self.right_box_loc)
 			else:
 				blit(self.low_val_rect, 5, self.left_box_loc)
 				blit(self.low_val_rect, 5, self.right_box_loc)
-		else:
+		else: # Probe trials, where boxes are white.
 			blit(self.thin_rect, 5, self.left_box_loc)
 			blit(self.thin_rect, 5, self.right_box_loc)
-
+	
+	# Presents target & non-target lines. Probably a better name for this out there....
 	def training_callback(self):
 		self.confirm_fixation()
 		self.present_boxes()
 
 		blit(self.tilt_line, 5, self.tilt_line_loc)
 		blit(self.flat_line, 5, self.flat_line_loc)
-
+	
+	# Presents probes & go/no-go signal
 	def probe_callback(self):
 		self.confirm_fixation()
 		self.present_boxes()
@@ -472,7 +473,8 @@ class IOReward_E2(klibs.Experiment):
 		else:
 			blit(self.probe, 5, self.probe_loc)
 			blit(self.nogo, 5, self.probe_loc)
-
+	
+	# Learning probe. Asks participants their anticipated earnings
 	def query_learning(self, potential_payoff):
 		if potential_payoff == HIGH:
 			anticipated_reward_high = query(user_queries.experimental[0])
